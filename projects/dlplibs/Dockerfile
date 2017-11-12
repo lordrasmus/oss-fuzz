@@ -19,11 +19,15 @@ MAINTAINER dtardon@redhat.com
 # enable source repos
 RUN sed -i -e '/^#\s*deb-src.*\smain\s\+restricted/s/^#//' /etc/apt/sources.list
 # install build requirements
-RUN apt-get update && apt-get build-dep -y \
-    libmspub librevenge libcdr libvisio libpagemaker libfreehand libwpd \
-    libwpg libwps libmwaw libe-book libabw libetonyek
-RUN apt-get update && apt-get install -y liblzma-dev libpng-dev wget
-ADD https://dev-www.libreoffice.org/src/lcms2-2.8.tar.gz $SRC/
+RUN apt-get update && \
+    apt-get install -y wget xz-utils autoconf automake libtool pkg-config \
+        gperf libboost-dev libglm-dev libmdds-dev
+ADD https://dev-www.libreoffice.org/src/lcms2-2.8.tar.gz \
+    https://dev-www.libreoffice.org/src/zlib-1.2.11.tar.xz \
+    https://dev-www.libreoffice.org/src/libpng-1.6.34.tar.xz \
+    https://dev-www.libreoffice.org/src/libxml2-2.9.6.tar.gz \
+    http://download.icu-project.org/files/icu4c/60rc/icu4c-60rc-src.tgz \
+    $SRC/
 # download fuzzing corpora
 ADD https://dev-www.libreoffice.org/corpus/olefuzzer_seed_corpus.zip \
     https://dev-www.libreoffice.org/corpus/pubfuzzer_seed_corpus.zip \
@@ -43,6 +47,7 @@ ADD https://dev-www.libreoffice.org/corpus/olefuzzer_seed_corpus.zip \
     https://dev-www.libreoffice.org/corpus/key6fuzzer_seed_corpus.zip \
     https://dev-www.libreoffice.org/corpus/vsdxfuzzer_seed_corpus.zip \
     https://dev-www.libreoffice.org/corpus/vdxfuzzer_seed_corpus.zip \
+    https://dev-www.libreoffice.org/corpus/qxpfuzzer_seed_corpus.zip \
     $SRC/
 RUN wget -q --show-progress --progress=bar:force \
     https://sourceforge.net/projects/libwpd/files/corpus/wpdfuzzer_seed_corpus.zip \
@@ -110,5 +115,6 @@ RUN git clone --depth 1 git://git.code.sf.net/p/libmwaw/libmwaw
 RUN git clone --depth 1 git://git.code.sf.net/p/libebook/code libe-book
 RUN git clone --depth 1 git://gerrit.libreoffice.org/libabw
 RUN git clone --depth 1 git://gerrit.libreoffice.org/libetonyek
+RUN git clone --depth 1 git://gerrit.libreoffice.org/libqxp
 WORKDIR $SRC
 COPY build.sh abw.dict *.options $SRC/

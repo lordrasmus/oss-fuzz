@@ -28,6 +28,7 @@ CONFIGURATIONS = {
   'engine-libfuzzer' : [ 'FUZZING_ENGINE=libfuzzer' ],
   'engine-afl' : [ 'FUZZING_ENGINE=afl' ],
   'engine-honggfuzz' : [ 'FUZZING_ENGINE=honggfuzz' ],
+  'engine-none' : [ 'FUZZING_ENGINE=none' ],
 }
 
 EngineInfo = collections.namedtuple(
@@ -43,6 +44,9 @@ ENGINE_INFO = {
     'honggfuzz': EngineInfo(
         upload_bucket='clusterfuzz-builds-honggfuzz',
         supported_sanitizers=['address', 'memory', 'undefined']),
+    'none': EngineInfo(
+        upload_bucket='clusterfuzz-builds-no-engine',
+        supported_sanitizers=['address']),
 }
 
 DEFAULT_ENGINES = ['libfuzzer', 'afl', 'honggfuzz']
@@ -187,7 +191,7 @@ def get_build_steps(project_yaml, dockerfile_path):
       build_steps.extend([
           # compile
           {'name': image,
-            'env' : env,
+            'env': env,
             'args': [
               'bash',
               '-c',
@@ -199,8 +203,8 @@ def get_build_steps(project_yaml, dockerfile_path):
               # We also remove /work and /src to save disk space after a step.
               # Container Builder doesn't pass --rm to docker run yet.
               'rm -r /out && cd /src && cd {1} && mkdir -p {0} && compile && rm -rf /work && rm -rf /src'.format(out, workdir),
-              ],
-            },
+            ],
+          },
           # zip binaries
           {'name': image,
             'args': [
@@ -209,19 +213,19 @@ def get_build_steps(project_yaml, dockerfile_path):
               'cd {0} && zip -r {1} *'.format(out, zip_file)
             ],
           },
-          # upload binaries
-          {'name': 'gcr.io/oss-fuzz-base/uploader',
-           'args': [
-               os.path.join(out, zip_file),
-               upload_url,
-           ],
-          },
           # upload srcmap
           {'name': 'gcr.io/oss-fuzz-base/uploader',
            'args': [
                '/workspace/srcmap.json',
                srcmap_url,
-           ],
+            ],
+          },
+          # upload binaries
+          {'name': 'gcr.io/oss-fuzz-base/uploader',
+           'args': [
+               os.path.join(out, zip_file),
+               upload_url,
+            ],
           },
           # cleanup
           {'name': image,
@@ -256,7 +260,7 @@ def main():
 
   build_body = {
       'steps': get_build_steps(project_yaml, dockerfile_path),
-      'timeout': str(4 * 3600) + 's',
+      'timeout': str(6 * 3600) + 's',
       'options': options,
       'logsBucket': 'oss-fuzz-gcb-logs',
       'images': [ project_yaml['image'] ],
